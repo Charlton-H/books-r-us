@@ -2,6 +2,10 @@ const { User, Book } = require('../models');
 const { AuthenticationError } = require('apollo-server-express');
 const { signToken } = require('../utils/auth');
 
+/*
+Resolvers are simply the functions we connect to each query or mutation type definition that 
+perform the CRUD actions that each query or mutation is expected to perform
+*/
 const resolvers = {
   Query: {
     me: async (parent, args, context) => {
@@ -37,6 +41,28 @@ const resolvers = {
 
       const token = signToken(user);
       return { token, user };
+    },
+    saveBook: async (parent, args, context) => {
+      if (context.user) {
+        const updatedUser = await User.findByIdAndUpdate(
+          { _id: context.user._id },
+          { $push: { savedBooks: args.input } },
+          { new: true }
+        );
+        return updatedUser;
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
+    removeBook: async (parent, args, context) => {
+      if (context.user) {
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $pull: { savedBooks: { bookId: args.bookId } } },
+          { new: true }
+        );
+        return updatedUser;
+      }
+      throw new AuthenticationError('You need to be logged in!');
     },
   },
 };
