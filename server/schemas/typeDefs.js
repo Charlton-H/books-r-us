@@ -7,6 +7,8 @@ Every GraphQL API starts with defining this data, as this type of strict type de
 const typeDefs = gql`
   type Query {
     me: User
+    users: [User]
+    user(username: String!): User
   }
 
   type User {

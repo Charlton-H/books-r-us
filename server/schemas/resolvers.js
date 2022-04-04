@@ -18,6 +18,14 @@ const resolvers = {
       }
       throw new AuthenticationError('Not logged in');
     },
+    users: async () => {
+      return User.find().select('-__v -password').populate('savedBooks');
+    },
+    user: async (parent, { username }) => {
+      return User.findOne({ username })
+        .select('-__v -password')
+        .populate('savedBooks');
+    },
   },
   Mutation: {
     addUser: async (parent, args) => {
@@ -43,10 +51,13 @@ const resolvers = {
       return { token, user };
     },
     saveBook: async (parent, args, context) => {
+      // Only logged-in users should be able to use this mutation, hence why we check for the existence of context.user
       if (context.user) {
         const updatedUser = await User.findByIdAndUpdate(
           { _id: context.user._id },
-          { $push: { savedBooks: args.input } },
+          // the $addToSet doesn't add the item to the given field if it already contains it, on the other hand, $push will add the given object to field whether it exists or not
+          { $addToSet: { savedBooks: args.input } },
+          // without the { new: true } flag in User.findByIdAndUpdate(), Mongo would return the original document instead of the updated document
           { new: true }
         );
         return updatedUser;
